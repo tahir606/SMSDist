@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="762.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.OutFXMLController">
+    <children>
+        
+        <Button layoutX="668.0" layoutY="338.0" mnemonicParsing="false" onAction="#handleRefreshAction" prefHeight="48.0" prefWidth="80.0" text="Refresh">
+            <font>
+                <Font size="15.0" />
+            </font>
+        </Button>
+        <TableView fx:id="table_msgs" layoutX="15.0" layoutY="16.0" prefHeight="370.0" prefWidth="642.0">
+            <columns>
+                <TableColumn fx:id="col_id" prefWidth="38.0" text="ID" />
+                <TableColumn fx:id="col_sender" prefWidth="78.0" text="SENDER" />
+                <TableColumn fx:id="col_receiver" prefWidth="81.0" text="RECEIVER" />
+                <TableColumn fx:id="col_msg" prefWidth="208.0" text="MESSAGE" />
+                <TableColumn fx:id="col_operator" prefWidth="69.0" text="OPERATOR" />
+                <TableColumn fx:id="col_date" prefWidth="64.0" text="DATE" />
+                <TableColumn fx:id="col_time" prefWidth="54.0" text="TIME" />
+                <TableColumn fx:id="col_flag" prefWidth="49.0" text="FLAG" />
+            </columns>
+        </TableView>        
+        
+    </children>
+</AnchorPane>

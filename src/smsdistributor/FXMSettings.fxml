@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.shape.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="457.0" prefWidth="544.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.FXMSettingsController">
+   <children>
+      <Label layoutX="63.0" layoutY="43.0" prefHeight="17.0" prefWidth="80.0" text="Port:" />
+      <ComboBox fx:id="combo_port" layoutX="164.0" layoutY="39.0" prefHeight="25.0" prefWidth="115.0" promptText="COM" />
+      <Button layoutX="303.0" layoutY="39.0" mnemonicParsing="false" onAction="#handleAutoAction" text="Auto-Detect" />
+      <Label layoutX="62.0" layoutY="80.0" prefHeight="17.0" prefWidth="80.0" text="Bit Rate:" />
+      <ComboBox fx:id="combo_bitrate" layoutX="164.0" layoutY="76.0" prefHeight="25.0" prefWidth="115.0" promptText="BitRate" />
+      <Label layoutX="62.0" layoutY="120.0" text="Modem Name:" />
+      <TextField fx:id="txt_modem" layoutX="164.0" layoutY="116.0" prefHeight="25.0" prefWidth="221.0" />
+      <Label layoutX="62.0" layoutY="162.0" prefHeight="17.0" prefWidth="80.0" text="Modem Pin:" />
+      <TextField fx:id="txt_pin" layoutX="164.0" layoutY="158.0" />
+      <TextField fx:id="txt_smsc" layoutX="165.0" layoutY="200.0" />
+      <Label layoutX="62.0" layoutY="204.0" prefHeight="17.0" prefWidth="80.0" text="SIM Number:" />
+      <Label layoutX="62.0" layoutY="282.0" prefHeight="17.0" prefWidth="80.0" text="SMS:" />
+      <Label layoutX="222.0" layoutY="282.0" text="Time Interval:" />
+      <TextField fx:id="txt_smsno" layoutX="110.0" layoutY="278.0" prefHeight="25.0" prefWidth="80.0" />
+      <TextField fx:id="txt_time" layoutX="314.0" layoutY="278.0" prefHeight="25.0" prefWidth="80.0" />
+      <Button fx:id="btn_save" layoutX="448.0" layoutY="395.0" mnemonicParsing="false" onAction="#handleSaveAction" prefHeight="32.0" prefWidth="71.0" text="Save">
+         <font>
+            <Font size="15.0" />
+         </font>
+      </Button>
+      <Label layoutX="63.0" layoutY="338.0" text="IP:" />
+      <TextField fx:id="txt_ip" layoutX="110.0" layoutY="334.0" prefHeight="25.0" prefWidth="212.0" />
+      <Label layoutX="63.0" layoutY="370.0" text="User:" />
+      <TextField fx:id="txt_user" layoutX="110.0" layoutY="366.0" />
+      <TextField fx:id="txt_pass" layoutX="109.0" layoutY="398.0" />
+      <Label layoutX="62.0" layoutY="402.0" text="Pass:" />
+      <CheckBox fx:id="check_trans" layoutX="394.0" layoutY="171.0" mnemonicParsing="false" text="Transmitting" />
+      <CheckBox fx:id="check_rec" layoutX="394.0" layoutY="195.0" mnemonicParsing="false" prefHeight="17.0" prefWidth="88.0" text="Receiving" />
+      <CheckBox fx:id="check_auto" layoutX="394.0" layoutY="220.0" mnemonicParsing="false" text="AutoReply" /> 
+   </children>
+</AnchorPane>

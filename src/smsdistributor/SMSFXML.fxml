@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="284.0" prefWidth="408.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.SMSFXMLController">
+   <children>
+      <Label layoutX="34.0" layoutY="31.0" text="Phone:" />
+      <Label layoutX="34.0" layoutY="71.0" prefHeight="17.0" prefWidth="37.0" text="Body:" />
+      <TextField fx:id="txt_phone" layoutX="88.0" layoutY="27.0" prefHeight="25.0" prefWidth="289.0" />
+      <TextArea fx:id="txt_body" layoutX="88.0" layoutY="71.0" prefHeight="147.0" prefWidth="289.0" />
+      <Button fx:id="btn_send" layoutX="305.0" layoutY="230.0" mnemonicParsing="false" onAction="#handleSendAction" prefHeight="40.0" prefWidth="71.0" text="Send" />
+   </children>
+</AnchorPane>
