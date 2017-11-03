@@ -47,6 +47,8 @@ public class FXMSettingsController implements Initializable {
     private CheckBox check_rec;
     @FXML
     private CheckBox check_auto;
+    @FXML
+    private CheckBox check_allRep;
     
     static String COMPORT;
     static int BITRATE;
@@ -152,7 +154,7 @@ public class FXMSettingsController implements Initializable {
         fh.SaveSettings(COMPORT, BITRATE, Modem, Pin, Smsc, SmsNo, Time, ip, user, pass);
         fh.write_boolean_trans(check_trans.isSelected());
         fh.write_boolean_rec(check_rec.isSelected());
-        fh.write_boolean_auto(check_auto.isSelected());
+        fh.write_boolean_auto(check_auto.isSelected(),check_allRep.isSelected());
         
         Alert alert2 = new Alert(Alert.AlertType.CONFIRMATION, "Settings Saved. Restart The Apllication for the Changes to take effect.",
                 ButtonType.OK);

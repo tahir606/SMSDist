@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.text.*?>
-<?import javafx.scene.shape.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane id="AnchorPane" prefHeight="457.0" prefWidth="544.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.FXMSettingsController">
+<AnchorPane id="AnchorPane" prefHeight="457.0" prefWidth="544.0" xmlns="http://javafx.com/javafx/9" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.FXMSettingsController">
    <children>
       <Label layoutX="63.0" layoutY="43.0" prefHeight="17.0" prefWidth="80.0" text="Port:" />
       <ComboBox fx:id="combo_port" layoutX="164.0" layoutY="39.0" prefHeight="25.0" prefWidth="115.0" promptText="COM" />
@@ -36,8 +36,9 @@
       <TextField fx:id="txt_user" layoutX="110.0" layoutY="366.0" />
       <TextField fx:id="txt_pass" layoutX="109.0" layoutY="398.0" />
       <Label layoutX="62.0" layoutY="402.0" text="Pass:" />
-      <CheckBox fx:id="check_trans" layoutX="394.0" layoutY="171.0" mnemonicParsing="false" text="Transmitting" />
-      <CheckBox fx:id="check_rec" layoutX="394.0" layoutY="195.0" mnemonicParsing="false" prefHeight="17.0" prefWidth="88.0" text="Receiving" />
-      <CheckBox fx:id="check_auto" layoutX="394.0" layoutY="220.0" mnemonicParsing="false" text="AutoReply" /> 
+      <CheckBox fx:id="check_trans" layoutX="394.0" layoutY="157.0" mnemonicParsing="false" text="Transmitting" />
+      <CheckBox fx:id="check_rec" layoutX="394.0" layoutY="181.0" mnemonicParsing="false" prefHeight="17.0" prefWidth="88.0" text="Receiving" />
+      <CheckBox fx:id="check_auto" layoutX="394.0" layoutY="206.0" mnemonicParsing="false" text="AutoReply" />
+      <CheckBox fx:id="check_allRep" layoutX="394.0" layoutY="231.0" mnemonicParsing="false" text="Reply to All" /> 
    </children>
 </AnchorPane>

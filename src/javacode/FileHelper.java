@@ -143,7 +143,7 @@ public class FileHelper {
         }
     }
     
-       public String check_box_auto() {
+       public String[] check_box_auto() {
         String text;
         InputStreamReader isReader = null;
         try {
@@ -154,7 +154,7 @@ public class FileHelper {
 
             text = br.readLine();
 
-            return text;
+            return text.split(",");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -166,16 +166,16 @@ public class FileHelper {
 
             }
         }
-        return "";
+        return null;
     }
 
-    public void write_boolean_auto(boolean choice) {
+    public void write_boolean_auto(boolean choice, boolean all) {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter(
                     new File(FADD + "checkboxAuto.txt"));
 
-            writer.write(String.valueOf(choice));
+            writer.write(String.valueOf(choice) + ',' + String.valueOf(all));
 
         } catch (IOException ex) {
             ex.printStackTrace();

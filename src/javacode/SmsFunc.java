@@ -47,7 +47,7 @@ public class SmsFunc {
     private static String number = "";
     private static String interval = "";
     
-    private static String auto_reply = "";
+    private static String[] auto_reply = null;
 
     public SmsFunc() {
         FileHelper fh = new FileHelper();
@@ -231,7 +231,7 @@ public class SmsFunc {
                     System.out.println("ARCOD: " + arr[1] + " ,PACOD: " + arr[2]
                             + " ,TYPE: " + arr[3] + " ,MSG: " + arr[4]);
                     String msgText = oCon.insertRecord(originator, arr[1], arr[2], arr[3], arr[4], timeStamp);                   
-                    if (auto_reply.equals("true")) {
+                    if (auto_reply[0].equals("true")) {
                         System.out.println(msgText);                     
                         String originatED = "0" + originator.substring(2);
                         SendMsg(Service.getInstance(), originatED, msgText);
@@ -241,6 +241,11 @@ public class SmsFunc {
                     helper.displayNotification("Order Booked", "Inserted Order for " + originator);
                 } else {
                     orc.insertElse(originator, textMessage, timeStamp);
+                    if(auto_reply[1].equals("true")) {
+                        String originatED = "0" + originator.substring(2);
+                        System.out.println("Verification Message Sent to: " + originatED);
+                        SendMsg(Service.getInstance(), originatED, "Message recieved successfully!");
+                    }
                     System.out.println("Saved");
                 }
             } catch (NullPointerException e) {
