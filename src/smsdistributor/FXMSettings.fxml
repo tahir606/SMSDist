@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane id="AnchorPane" prefHeight="457.0" prefWidth="544.0" xmlns="http://javafx.com/javafx/9" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.FXMSettingsController">
+<AnchorPane id="AnchorPane" prefHeight="457.0" prefWidth="544.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="smsdistributor.FXMSettingsController">
    <children>
       <Label layoutX="63.0" layoutY="43.0" prefHeight="17.0" prefWidth="80.0" text="Port:" />
       <ComboBox fx:id="combo_port" layoutX="164.0" layoutY="39.0" prefHeight="25.0" prefWidth="115.0" promptText="COM" />

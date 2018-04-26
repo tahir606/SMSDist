@@ -112,22 +112,31 @@ public class orcCon {
 
     }
 
-    public String insertRecord(String phone, String Area, String party, String type, String msg, String time) {
+    public String insertRecord(String phone, String Area, String party, String type, String msg, String time) throws Exception {
+
+        if (checkIfRecordExists(phone, msg, time)) {
+            return null;
+        }
 
         String insert = "insert into ozekimessagein (ID,RECEIVER,MSG,ARCOD,PACOD,MSGTYPE,FLAG,RECEIVEDTIME) "
-                + " values((select NVL(max(ID),0)+1 from ozekimessagein),'" + phone + "','" + msg + "','" + Area
-                + "','" + party + "','" + type + "','S',TO_DATE('" + time.split("\\.")[0] + " "
-                    + time.split("\\.")[1] + "','DD-MON-YYYY HH24:MI:SS'))";      
-        
+                + " values((select NVL(max(ID),0)+1 from ozekimessagein),?,?,?,?,?,'S'"
+                + ",TO_DATE('" + time.split("\\.")[0] + " "
+                + time.split("\\.")[1] + "','DD-MON-YYYY HH24:MI:SS'))";
+
         String fetch = "{? = call AUTO_REPLY(?,?,?)}";
 
-        SmsFunc smsFunc = new SmsFunc();
+        SmsFuncAt smsFunc = new SmsFuncAt();
         TrayHelper helper = new TrayHelper();
 
         try {
             Connection conn = connectDB();
             PreparedStatement statement = conn.prepareStatement(insert);
-            statement.executeQuery(insert);
+            statement.setString(1, phone);
+            statement.setString(2, msg);
+            statement.setString(3, Area);
+            statement.setString(4, party);
+            statement.setString(5, type);
+            statement.executeUpdate();
             statement.close();
 
             CallableStatement statement1 = conn.prepareCall(fetch);
@@ -147,20 +156,24 @@ public class orcCon {
 
     }
 
-    public void insertElse(String phone, String msg, String time) {
+    public void insertElse(String phone, String msg, String time) throws Exception {
         try {
-//            String insert = "insert into ozekimessagein (ID,RECEIVER,MSG,RECEIVEDTIME,FLAG) "
-//                    + " values((select NVL(max(ID),0)+1 from ozekimessagein),'" + phone + "','" + msg + "','" + time.split("\\.")[0] + "','G')";
-            String insert = "insert into ozekimessagein (ID,RECEIVER,MSG,RECEIVEDTIME,FLAG) "
-                    + " values((select NVL(max(ID),0)+1 from ozekimessagein),'" + phone + "','" + msg + "',TO_DATE('" + time.split("\\.")[0] + " "
-                    + time.split("\\.")[1] + "','DD-MON-YYYY HH24:MI:SS'),'G')";
 
+            if (checkIfRecordExists(phone, msg, time)) {
+                return;
+            }
+
+            String insert = "insert into ozekimessagein (ID,RECEIVER,MSG,RECEIVEDTIME,FLAG) "
+                    + " values((select NVL(max(ID),0)+1 from ozekimessagein),?,?,TO_DATE('" + time.split("\\.")[0] + " "
+                    + time.split("\\.")[1] + "','DD-MON-YYYY HH24:MI:SS'),'G')";
             //System.out.println(time);
-            //System.out.println(insert);
+//            System.out.println(insert);
 
             Connection conn = connectDB();
             PreparedStatement statement = conn.prepareStatement(insert);
-            statement.executeQuery(insert);
+            statement.setString(1, phone);
+            statement.setString(2, msg);
+            statement.executeUpdate();
             statement.close();
             conn.close();
         } catch (SQLException ex) {
@@ -171,11 +184,37 @@ public class orcCon {
     public void addQueue(String phone, String msg) throws Exception {
 
         //System.out.println(phone + "    " + msg);
-        OutboundMessage Omsg = new OutboundMessage(phone, msg);
-        Service.getInstance().sendMessage(Omsg);
         TrayHelper helper = new TrayHelper();
-        helper.displayNotification("Notification", "Message Sent");
+        if (SmsFuncAt.sendSMS(phone, msg)) {
+            helper.displayNotification("Notification", "Message Sent");
+        } else {
+            helper.displayNotification("Error", "Message Unable to Send");
+        }
+    }
 
+    public boolean checkIfRecordExists(String phone, String msg, String time) {
+        String query = "SELECT ID FROM OZEKIMESSAGEIN"
+                + " WHERE RECEIVER = ? "
+                + " AND MSG = ? "
+                + " AND TRUNC(RECEIVEDTIME) = ? ";
+
+        try {
+            Connection con = connectDB();
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setString(1, phone);
+            statement.setString(2, msg);
+            statement.setString(3, time.split("\\.")[0]);
+            ResultSet set = statement.executeQuery();
+            if (!set.isBeforeFirst()) {
+                return false;
+            } else {
+                return true;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(orcCon.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        System.out.println("Returning False 2");
+        return false;
     }
 
 }

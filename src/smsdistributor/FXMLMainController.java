@@ -13,7 +13,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import javacode.FileHelper;
-import javacode.SmsFunc;
+import javacode.SmsFuncAt;
 import javacode.TrayHelper;
 import javacode.orcCon;
 import javafx.application.Platform;
@@ -136,7 +136,7 @@ public class FXMLMainController implements Initializable {
         ps = new PrintStream(new Console(txt_console));
         System.setOut(ps);
         System.setErr(ps);
-        SmsFunc fx = new SmsFunc();
+        SmsFuncAt fx = new SmsFuncAt();
         fx.action(label_version, label_manufacturer, label_model, label_serial, label_imsi, label_signal, label_battery);
     }
 

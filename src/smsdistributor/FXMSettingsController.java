@@ -3,7 +3,6 @@ package smsdistributor;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javacode.FileHelper;
-import javacode.SmsFunc;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;

@@ -3,7 +3,6 @@ package smsdistributor;
 import datatypes.msgout;
 import java.util.List;
 import java.util.Scanner;
-import javacode.SmsFunc;
 import javacode.TrayHelper;
 import javacode.orcCon;
 import javafx.application.Application;
