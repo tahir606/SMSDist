@@ -80,7 +80,7 @@ public class SmsFuncAt {
                     System.out.println("Got Hold on " + comPort);
                     portFound = true;
                     try {
-                        serialPort = (SerialPort) portId.open("BULK SMS", 2000);
+                        serialPort = (SerialPort) portId.open(comPort, 2000);
                         outputStream = serialPort.getOutputStream();
                         inputStream = serialPort.getInputStream();
                         serialPort.setSerialPortParams(115200,
@@ -111,7 +111,7 @@ public class SmsFuncAt {
             sendCmd("AT+CSCA=\"+923189244444\",145\r");
             
             //Setting preferred storage as SIM
-            sendCmd("AT+CPMS=\"MT\"\r");
+            sendCmd("AT+CPMS=\"SM\"\r");
             
             //For Receicing messages
             sendCmd("AT+CNMI\r");
@@ -140,14 +140,14 @@ public class SmsFuncAt {
 
     public void readUnReadSMS() {
         try {
-            String sendCmd = "AT+CMGL=\"ALL\"\r";
-//            String sendCmd = "AT+CMGR=16\r";
+//            String sendCmd = "AT+CMGL=\"ALL\"\r";
+            String sendCmd = "AT+CMGR=15\r";
             outputStream.write(sendCmd.getBytes());
             String result = readResponse();
-//            System.out.println("Result: " + result);
+            System.out.println("Result: " + result);
 
             //Extract the sms object
-            String arr[] = result.split("\\+CMGL:");
+            String arr[] = result.split("\\+CMGR:");
             for (String msg : arr) {    //Iterating each msg
                 String it[] = msg.split("\n");
                 String details;
