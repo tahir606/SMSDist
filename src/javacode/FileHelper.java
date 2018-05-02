@@ -142,8 +142,8 @@ public class FileHelper {
             writer.close();
         }
     }
-    
-       public String[] check_box_auto() {
+
+    public String[] check_box_auto() {
         String text;
         InputStreamReader isReader = null;
         try {
@@ -183,4 +183,52 @@ public class FileHelper {
             writer.close();
         }
     }
+
+    public static void writeSmsIndex(int index) {
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(
+                    new File("smsIndex.txt"));
+
+            writer.write(String.valueOf(index));
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            writer.close();
+        }
+    }
+
+    public static int readSmsIndex() {
+        String text;
+        InputStreamReader isReader = null;
+        try {
+            isReader = new InputStreamReader(
+                    new FileInputStream(
+                            new File("smsIndex.txt")));
+            BufferedReader br = new BufferedReader(isReader);
+
+            text = br.readLine();
+
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            writeSmsIndex(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                isReader.close();
+            } catch (IOException ex) {
+
+            }
+        }
+        return 0;
+    }
+
 }

@@ -102,20 +102,20 @@ public class SmsFuncAt {
         //Intialize Modem if port is found
         try {
             //Setting Mode to Text (0 is for PDU)
-            if (sendCmd("AT+CMGF=1\r").equals("")) {
+            if (sendCmd("AT+CMGF=0\r").equals("")) {
                 isConnected = false;
-                System.out.println("Port not Connected");                        
+                System.out.println("Port not Connected");
                 return;
             }
             //Setting SMSC No for Modem           
-            sendCmd("AT+CSCA=\"+923189244444\",145\r");
-            
+            System.out.println(sendCmd("AT+CSCA=\"+923189244444\",145\r"));
+
             //Setting preferred storage as SIM
-            sendCmd("AT+CPMS=\"SM\"\r");
-            
+            System.out.println(sendCmd("AT+CPMS=\"MT\",\"MT\",\"MT\"\r"));
+
             //For Receicing messages
-            sendCmd("AT+CNMI\r");
-            
+            System.out.println(sendCmd("AT+CNMI=0,0,0,0\r"));
+
             isConnected = true;
             System.out.println("Port Connected Successfully\n\r");
         } catch (Exception e) {
@@ -126,7 +126,8 @@ public class SmsFuncAt {
 
     public static boolean sendSMS(String phone, String msg) {
         try {
-            sendCmd("AT+CMGS=\"" + phone + "\"\r");
+            String sendCmd = "AT+CMGS=\"" + phone + "\"\r";
+            sendCmd(sendCmd);
             outputStream.write(msg.getBytes()); //Enter MSG to send in >
             ctrlZ();
             System.out.println(readResponse());
@@ -183,6 +184,104 @@ public class SmsFuncAt {
         }
     }
 
+    static boolean isFirst = true;
+    static boolean isThere = true;
+
+    public void readSmsToIndex() {
+        try {
+
+            int index;
+            while (true) {
+                index = FileHelper.readSmsIndex();
+                String sendCmd = "AT+CMGR=" + index + "\r";
+                outputStream.write(sendCmd.getBytes());
+                String result = readResponse();
+                String lines[] = result.trim().split("\n");
+
+                if (isThere == false) {     //if on the first check there are no sms, empty storage
+                    if (isFirst == true) {
+                        emptySMStorage();
+                        isFirst = false;
+                    }
+                }
+
+                try {
+                    if (lines.length < 4 && lines[2].equals("OK")) {    //Empty
+                        isThere = false;
+                        FileHelper.writeSmsIndex(0);
+                        break;
+                    }
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    isThere = false;
+                    FileHelper.writeSmsIndex(0);
+                    break;
+                }
+                if (result.contains("ERROR")) {
+                    isThere = false;
+                    FileHelper.writeSmsIndex(0);
+                    break;
+                }
+                Sms sms = extractSMSObject(index, result);
+                if (sms == null) {
+                    isThere = false;
+                    FileHelper.writeSmsIndex(0);
+                    break;
+                }
+                isThere = true;
+                isFirst = false;
+
+                //Display Notification
+                System.out.println("Message Received \nFrom: " + sms.getSenderPhone() + "\nBody: " + sms.getBody());
+
+                //Insert into database
+                insertSmsToDB(sms);
+
+                //Delete SMS from memory
+                sendCmd("AT+CMGD=" + index + "\r");
+                System.out.println("Message Deleted");
+
+                index++;
+                FileHelper.writeSmsIndex(index);
+
+                Thread.sleep(2000);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Sms extractSMSObject(int index, String result) {
+//        System.out.println(result);
+        Sms sms = new Sms();
+        sms.setIndex(String.valueOf(index));
+        String arr[] = result.split("\n");
+        String details;
+        int pos = -1;
+        for (String st : arr) {
+            pos++;
+            if (st.contains("+CMGR:")) {
+                break;
+            }
+        }
+        try {
+            details = arr[pos];
+            String det[] = details.trim().replaceAll("\"", "").split(",");
+            sms.setSenderPhone(det[1]);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println(e);
+            System.out.println(result);
+            return null;
+        }
+        StringBuilder body = new StringBuilder();
+        for (int i = pos + 1; i < arr.length; i++) {   //Iterating Body
+            if (!arr[i].trim().equals("")) {
+                body.append(arr[i] + "\n");
+            }
+        }
+        sms.setBody(body.toString());
+        return sms;
+    }
+
     public void readParticularSMS(String no) {
         try {
             Thread.sleep(500);
@@ -192,7 +291,19 @@ public class SmsFuncAt {
             Thread.sleep(500);
             System.out.println(readResponse());
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    public void emptySMStorage() {
+        try {
+            Thread.sleep(500);
+            String sendCmd = "AT+CMGD=1,4\r";
+            System.out.println(sendCmd(sendCmd));
+            System.out.println("Storage Emptied");
+            FileHelper.writeSmsIndex(0);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -205,8 +316,9 @@ public class SmsFuncAt {
         String line = null;
         try {
             while ((line = reader.readLine()) != null) {
-//                System.out.println("Line: " + line);
+//                    System.out.println("Line: " + line);
                 builder.append(line + "\n");
+
             }
         } catch (IOException ex) {
 //            System.out.println("x--x");
@@ -215,6 +327,7 @@ public class SmsFuncAt {
     }
 
     static BufferedReader sReader;
+
     public static void listenToModem() {
         new Thread(new Runnable() {
             @Override
@@ -227,7 +340,7 @@ public class SmsFuncAt {
                             System.out.println(line);
                         }
                     } catch (IOException ex) {
-                        
+
                     }
                     try {
                         Thread.sleep(2000);
@@ -238,19 +351,22 @@ public class SmsFuncAt {
             }
         }).start();
     }
-    
 
     public void action(Label Version, Label Manufacturer, Label Model, Label SerialNo, Label IMSI, Label Signal, Label Battery) {
-        listenToModem();
+//        listenToModem();
+        FileHelper fHelper = new FileHelper();
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 SmsFuncAt sms = new SmsFuncAt();
                 while (isConnected) {
                     sms.sendPeriodSms();
-                    sms.readUnReadSMS();
+//                    sms.readUnReadSMS();   
+                    if (fHelper.check_box_rec().equals("true")) {
+                        readSmsToIndex();
+                    }
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(2000);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
@@ -301,7 +417,7 @@ public class SmsFuncAt {
             System.out.println();
             String timeStamp = new SimpleDateFormat("dd-MMM-yyyy.HH:mm:ss").format(new Date());
             try {
-                System.out.println("Message Received: " + textMessage + " From: " + originator);
+//                System.out.println("Message Received: " + textMessage + " From: " + originator);
                 if (textMessage.substring(0, 6).equals("Order.") || textMessage.substring(0, 6).equals("order.")) {
                     String[] arr = textMessage.split("\\.");
                     System.out.println("ARCOD: " + arr[1] + " ,PACOD: " + arr[2]
@@ -352,11 +468,21 @@ public class SmsFuncAt {
             }
         }
     }
-    
+
     public static String sendCmd(String command) throws Exception {
         outputStream.write(command.getBytes());
         Thread.sleep(500);
-        return readResponse();
+        String result = readResponse();
+        int times = 2;
+        if (result.contains("ERROR")) {
+            System.out.println(result);
+            for (int i = 0; i < times; i++) {               
+                outputStream.write(command.getBytes());
+                result = readResponse();
+                System.out.println(result);
+            }           
+        }
+        return result;
     }
 
     public static void ctrlZ() {
