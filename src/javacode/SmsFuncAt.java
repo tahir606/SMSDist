@@ -6,25 +6,11 @@ import gnu.io.*;
 import java.util.Enumeration;
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import javafx.application.Platform;
 import javafx.scene.control.Label;
-import javax.crypto.spec.SecretKeySpec;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.smslib.AGateway;
-import org.smslib.GatewayException;
-import org.smslib.InboundMessage;
-import org.smslib.Library;
-import org.smslib.Service;
-import org.smslib.TimeoutException;
-import org.smslib.crypto.AESKey;
-import org.smslib.modem.SerialModemGateway;
+import org.ajwcc.pduUtils.gsm3040.Pdu;
+import org.ajwcc.pduUtils.gsm3040.PduParser;
 
 public class SmsFuncAt {
 
@@ -51,6 +37,8 @@ public class SmsFuncAt {
     private static OutputStream outputStream;   //Send AT Commands through this stream
     private static InputStream inputStream;     //Receive responses through this stream
 
+    private static int mode;    //0 == PDU Mode && 1 == Text Mode
+
     public SmsFuncAt() {
         FileHelper fh = new FileHelper();
         String[] settings = fh.getSettings();
@@ -63,11 +51,10 @@ public class SmsFuncAt {
         number = settings[5];
         interval = settings[6];
         auto_reply = fh.check_box_auto();
-
+        mode = FileHelper.readMode();
         if (!isConnected) {
             connectModem();
         }
-
     }
 
     private void connectModem() {
@@ -102,13 +89,15 @@ public class SmsFuncAt {
         //Intialize Modem if port is found
         try {
             //Setting Mode to Text (0 is for PDU)
-            if (sendCmd("AT+CMGF=0\r").equals("")) {
+            String res = sendCmd("AT+CMGF=" + mode + "\r");
+            System.out.println(res);
+            if (res.equals("")) {
                 isConnected = false;
                 System.out.println("Port not Connected");
                 return;
             }
             //Setting SMSC No for Modem           
-            System.out.println(sendCmd("AT+CSCA=\"+923189244444\",145\r"));
+            System.out.println(sendCmd("AT+CSCA=\"" + SMSC + "\",145\r"));
 
             //Setting preferred storage as SIM
             System.out.println(sendCmd("AT+CPMS=\"MT\",\"MT\",\"MT\"\r"));
@@ -124,7 +113,7 @@ public class SmsFuncAt {
         }
     }
 
-    public static boolean sendSMS(String phone, String msg) {
+    public static boolean sendSMSText(String phone, String msg) {
         try {
             String sendCmd = "AT+CMGS=\"" + phone + "\"\r";
             sendCmd(sendCmd);
@@ -139,49 +128,37 @@ public class SmsFuncAt {
         }
     }
 
-    public void readUnReadSMS() {
+    public static boolean sendSMSPDU(String phone, String msg) {
         try {
-//            String sendCmd = "AT+CMGL=\"ALL\"\r";
-            String sendCmd = "AT+CMGR=15\r";
-            outputStream.write(sendCmd.getBytes());
-            String result = readResponse();
-            System.out.println("Result: " + result);
-
-            //Extract the sms object
-            String arr[] = result.split("\\+CMGR:");
-            for (String msg : arr) {    //Iterating each msg
-                String it[] = msg.split("\n");
-                String details;
-                StringBuilder body = new StringBuilder();
-                Sms sms = new Sms();
-                try {
-                    details = it[0];
-                    String det[] = details.trim().replaceAll("\"", "").split(",");
-                    sms.setIndex(det[0]);
-                    sms.setSenderPhone(det[2]);
-                    sms.setTimeStamp(det[4] + " " + det[5]);
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    continue;
-                }
-                for (int i = 1; i < it.length; i++) {   //Iterating Body
-                    if (!it[i].trim().equals("")) {
-                        body.append(it[i] + "\n");
-                    }
-                }
-                sms.setBody(body.toString());
-
-                //Save the ms object in database
-                insertSmsToDB(sms);
-
-                //Delete SMS from memory
-                sendCmd("AT+CMGD=" + sms.getIndex() + "\r");
-                System.out.println("Message Deleted");
-
-                Thread.sleep(2000); //Take a break after each mesage
+            if (phone.startsWith("0")) {
+                phone = "+92" + phone.substring(1);
             }
+            System.out.println("Phone: " + phone);
+            PDUConverter.PDUEncoded encoded = PDUConverter.encode("+31624000000", phone, msg);
+           
+            System.out.println(encoded.getPduCommand());
+            outputStream.write(("AT+CMGS=" + encoded.getPduLength() + "\r").getBytes()); //Enter MSG to send in >
+            outputStream.write(encoded.getPduEncoded().getBytes());
+            ctrlZ();
+            System.out.println(readResponse());
+//            System.out.println("               " + phone + "               " + "Message Sent");
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
+    }
+
+    public static boolean sendSMS(String phone, String msg) {
+        switch (mode) {
+            case 0: {   //PDU
+                return sendSMSPDU(phone, msg);
+            }
+            case 1: {   //Text
+                return sendSMSText(phone, msg);
+            }
+        }
+        return false;
     }
 
     static boolean isFirst = true;
@@ -231,8 +208,10 @@ public class SmsFuncAt {
                 isFirst = false;
 
                 //Display Notification
+                if (sms.getSenderPhone() == null || sms.getBody() == null) {
+                    break;
+                }
                 System.out.println("Message Received \nFrom: " + sms.getSenderPhone() + "\nBody: " + sms.getBody());
-
                 //Insert into database
                 insertSmsToDB(sms);
 
@@ -251,7 +230,25 @@ public class SmsFuncAt {
     }
 
     private Sms extractSMSObject(int index, String result) {
-//        System.out.println(result);
+        Sms sms = null;
+        switch (mode) {
+            case 0: {   //PDU
+                sms = extractSMSObjectPDU(index, result);
+//                if (sms.getSenderPhone() == null) {
+//                    
+//                }
+                break;
+            }
+            case 1: {   //Text
+                sms = extractSMSObjectText(index, result);
+                break;
+            }
+        }
+        return sms;
+    }
+
+    private Sms extractSMSObjectText(int index, String result) {
+        System.out.println(result);
         Sms sms = new Sms();
         sms.setIndex(String.valueOf(index));
         String arr[] = result.split("\n");
@@ -282,16 +279,30 @@ public class SmsFuncAt {
         return sms;
     }
 
-    public void readParticularSMS(String no) {
-        try {
-            Thread.sleep(500);
-            String sendCmd = "AT+CMGR=" + no + "\r";
-            System.out.println(sendCmd);
-            outputStream.write(sendCmd.getBytes());
-            Thread.sleep(500);
-            System.out.println(readResponse());
+    private Sms extractSMSObjectPDU(int index, String result) {
+        System.out.println(result);
+        Sms sms = new Sms();
+        sms.setIndex(String.valueOf(index));
+        String arr[] = result.split("\n");
+        String details;
+        int pos = 0;
+        for (String st : arr) {
+            pos++;
+            if (st.contains("+CMGR:")) {
+                break;
+            }
+        }
+        convertPDUtoText(arr[pos], sms);
+        return sms;
+    }
+
+    public void convertPDUtoText(String resultMessage, Sms sms) {
+            try {
+            Pdu pdu = new PduParser().parsePdu(resultMessage);
+            sms.setSenderPhone("+" + pdu.getAddress());
+            sms.setBody(pdu.getDecodedText());
         } catch (Exception e) {
-            e.printStackTrace();
+            return;
         }
     }
 
@@ -327,30 +338,6 @@ public class SmsFuncAt {
     }
 
     static BufferedReader sReader;
-
-    public static void listenToModem() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    sReader = new BufferedReader(new InputStreamReader(inputStream));
-                    String line = null;
-                    try {
-                        while ((line = sReader.readLine()) != null) {
-                            System.out.println(line);
-                        }
-                    } catch (IOException ex) {
-
-                    }
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
 
     public void action(Label Version, Label Manufacturer, Label Model, Label SerialNo, Label IMSI, Label Signal, Label Battery) {
 //        listenToModem();
@@ -459,7 +446,7 @@ public class SmsFuncAt {
                     orc.insertElse(originator, textMessage, timeStamp);
                     if (auto_reply[1].equals("true")) {
                         String originatED = originator;
-                        sendSMS(originatED, "Message recieved successfully!");
+                        sendSMSPDU(originatED, "Message recieved successfully!");
                         System.out.println("Verification Message Sent");
                     }
                 } catch (Exception ex) {
@@ -476,11 +463,11 @@ public class SmsFuncAt {
         int times = 2;
         if (result.contains("ERROR")) {
             System.out.println(result);
-            for (int i = 0; i < times; i++) {               
+            for (int i = 0; i < times; i++) {
                 outputStream.write(command.getBytes());
                 result = readResponse();
                 System.out.println(result);
-            }           
+            }
         }
         return result;
     }

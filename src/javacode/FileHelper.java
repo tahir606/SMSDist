@@ -230,5 +230,52 @@ public class FileHelper {
         }
         return 0;
     }
+    
+    public static void writeMode(int mode) {
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(
+                    new File("mode.txt"));
+
+            writer.write(String.valueOf(mode));
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            writer.close();
+        }
+    }
+    
+    public static int readMode() {
+        String text;
+        InputStreamReader isReader = null;
+        try {
+            isReader = new InputStreamReader(
+                    new FileInputStream(
+                            new File("mode.txt")));
+            BufferedReader br = new BufferedReader(isReader);
+
+            text = br.readLine();
+
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            writeMode(1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                isReader.close();
+            } catch (IOException ex) {
+
+            }
+        }
+        return 0;
+    }
 
 }

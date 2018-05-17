@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import javacode.Convertor;
 import javacode.FileHelper;
 import javacode.SmsFuncAt;
 import javacode.TrayHelper;
@@ -133,9 +134,9 @@ public class FXMLMainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         btn_settings.setStyle("-fx-background-image: url('smsdistributor/Settings-icon.png');");
-        ps = new PrintStream(new Console(txt_console));
-        System.setOut(ps);
-        System.setErr(ps);
+//        ps = new PrintStream(new Console(txt_console));
+//        System.setOut(ps);
+//        System.setErr(ps);
         SmsFuncAt fx = new SmsFuncAt();
         fx.action(label_version, label_manufacturer, label_model, label_serial, label_imsi, label_signal, label_battery);
     }

@@ -14,24 +14,31 @@ public class PDUConverter {
         String encSmsc = encodePhoneNumber(smsc);
         String encSmscLength = smscLength(encSmsc);
 
-        String encSmsDeliver = "04";
+        String encSmsDeliver = "11";
 
         String encReceiverLength = destinationNumberLength(destination);
         String encReceiver = encodePhoneNumber(destination);
 
         String encProtocolEncScheme = "0000";
 
-        String encTimestamp = getEncodedTimestamp();
+//        String encTimestamp = getEncodedTimestamp();
+//        String encUserData = encodeMessage(data);
+        String encUserDataLength = getUserDataLength(data);
+        String encUserData = Convertor.toPDU(data);
 
-        String encUserData = encodeMessage(data);
+//        System.out.println("\nEncSMSLength: " + encSmscLength + "\nEncSMS: " + encSmsc + "\nencSmsDeliver: " + encSmsDeliver + "\nencReceiverLength: " + encReceiverLength
+//                + "\nencReceiver: " + encReceiver + "\nencProtocolEncScheme: " + encProtocolEncScheme + "\nencUserDataLength: " + encUserDataLength +"\nencUserData: " + encUserData);
+        System.out.println(Convertor.toText(encUserData));
 
-        return new PDUEncoded(encSmscLength + encSmsc + encSmsDeliver + encReceiverLength + encReceiver + encProtocolEncScheme + encTimestamp + encUserData,
+        return new PDUEncoded(encSmscLength + encSmsc + encSmsDeliver + "00" + encReceiverLength + encReceiver + encProtocolEncScheme + "AA" + encUserDataLength + encUserData,
                 (encSmsDeliver.length()
-                        + encReceiverLength.length()
-                        + encReceiver.length()
-                        + encProtocolEncScheme.length()
-                        + encTimestamp.length()
-                        + encUserData.length()) / 2);
+                + encReceiverLength.length()
+                + "00".length()
+                + encReceiver.length()
+                + encProtocolEncScheme.length()
+                + "AA".length()
+                + encUserDataLength.length()
+                + encUserData.length()) / 2);
     }
 
     /**
@@ -42,13 +49,16 @@ public class PDUConverter {
      * @throws IllegalArgumentException
      */
     public static String encodeMessage(String message) throws IllegalArgumentException {
-        if (message.length() < 1)
+        if (message.length() < 1) {
             throw new IllegalArgumentException();
+        }
         Alphabet alphabet = new Alphabet();
 
         int[] z = new int[message.length()];
         for (int x = 0; x < message.length(); x++) {
+            System.out.println("Iterating: " + message.charAt(x));
             z[x] = alphabet.get(message.charAt(x));
+            System.out.println("Array: " + z[x]);
         }
 
         int[] ez = new int[(int) (Math.ceil(((double) 7) * z.length / 8))];
@@ -61,8 +71,9 @@ public class PDUConverter {
                 i_shift = 0;
                 if ((i + 1) < z.length) {
                     i += (i > 0) ? 1 : 0;
-                    if ((i + 1) < z.length)
+                    if ((i + 1) < z.length) {
                         ez[x] = (z[i] >> 0 | ((z[++i] & bit_ands[(i_shift)]) << 7 - i_shift++));
+                    }
                 } else {
                     ez[x] = (z[i] >> 0);
                     break;
@@ -80,6 +91,7 @@ public class PDUConverter {
 
         for (int x = 0; (x + 1) < ez.length; x++) {
             output += Integer.toHexString(ez[x]);
+            System.out.println("Output: " + output);
         }
 
         if (ez[ez.length - 1] < 10) {
@@ -149,7 +161,11 @@ public class PDUConverter {
 
     private static String destinationNumberLength(String number) {
         number = number.replace("[^\\d]", "");
-        return stringHexLength(number.length());
+        return stringHexLength(number.length() - 1);
+    }
+
+    private static String getUserDataLength(String msg) {
+        return stringHexLength(msg.length());
     }
 
     /**
@@ -160,8 +176,9 @@ public class PDUConverter {
      */
     private static String stringHexLength(int l) {
         String length = Integer.toHexString(l);
-        if (length.length() < 2)
+        if (length.length() < 2) {
             length = "0" + length;
+        }
 
         return length;
     }
@@ -197,10 +214,11 @@ public class PDUConverter {
         int offsetMinutes = TimeZone.getDefault().getOffset(new Date().getTime()) / 1000 / 60;
 
         if (TimeZone.getDefault().inDaylightTime(new Date())) {
-            if (offsetMinutes > 0)
+            if (offsetMinutes > 0) {
                 offsetMinutes -= 60;
-            else
+            } else {
                 offsetMinutes += 60;
+            }
         }
 
         offsetMinutes /= 15;
@@ -210,10 +228,11 @@ public class PDUConverter {
         }
 
         String tz = Integer.toHexString(offsetMinutes);
-        if (tz.length() == 2)
+        if (tz.length() == 2) {
             encoded[12] = tz.charAt(1);
-        else
+        } else {
             encoded[12] = '0';
+        }
 
         encoded[13] = tz.charAt(0);
 
@@ -221,7 +240,8 @@ public class PDUConverter {
     }
 
     /**
-     * Phone Number Type, international (with leading '+', or national like 0176...)
+     * Phone Number Type, international (with leading '+', or national like
+     * 0176...)
      */
     private enum PhoneNumberType {
         INTERNATIONAL("91"),
@@ -241,6 +261,7 @@ public class PDUConverter {
      * Alphabet to Byte mapping
      */
     private static class Alphabet {
+
         private HashMap<Character, Byte> alphabet;
 
         public Alphabet() {
@@ -386,6 +407,7 @@ public class PDUConverter {
     }
 
     public static class PDUEncoded {
+
         private String pduEncoded, length;
 
         public PDUEncoded(String pduEncoded, String length) {
@@ -407,8 +429,8 @@ public class PDUConverter {
         }
 
         public String getPduCommand() {
-            return "AT+CMGW=" + length + "\n" +
-                    pduEncoded + "\n";
+            return "AT+CMGS=" + length + "\n"
+                    + pduEncoded + "\n";
         }
     }
 }
