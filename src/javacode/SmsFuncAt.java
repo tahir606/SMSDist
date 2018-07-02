@@ -8,6 +8,9 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.scene.control.Label;
 import org.ajwcc.pduUtils.gsm3040.Pdu;
 import org.ajwcc.pduUtils.gsm3040.PduParser;
@@ -113,6 +116,31 @@ public class SmsFuncAt {
         }
     }
 
+    private void deleteSms(int index) throws Exception {
+        //Delete SMS from memory
+        sendCmd("AT+CMGD=" + index + "\r");
+        System.out.println("Message Deleted");
+    }
+
+    private void insertIntoDB(Sms sms, int index) throws Exception {
+        //Insert into database
+        insertSmsToDB(sms);
+        deleteSms(index);
+        index++;
+    }
+
+    public static boolean sendSMS(String phone, String msg) {
+        switch (mode) {
+            case 0: {   //PDU
+                return sendSMSPDU(phone, msg);
+            }
+            case 1: {   //Text
+                return sendSMSText(phone, msg);
+            }
+        }
+        return false;
+    }
+
     public static boolean sendSMSText(String phone, String msg) {
         try {
             String sendCmd = "AT+CMGS=\"" + phone + "\"\r";
@@ -135,7 +163,7 @@ public class SmsFuncAt {
             }
             System.out.println("Phone: " + phone);
             PDUConverter.PDUEncoded encoded = PDUConverter.encode("+31624000000", phone, msg);
-           
+
             System.out.println(encoded.getPduCommand());
             outputStream.write(("AT+CMGS=" + encoded.getPduLength() + "\r").getBytes()); //Enter MSG to send in >
             outputStream.write(encoded.getPduEncoded().getBytes());
@@ -149,84 +177,124 @@ public class SmsFuncAt {
         }
     }
 
-    public static boolean sendSMS(String phone, String msg) {
-        switch (mode) {
-            case 0: {   //PDU
-                return sendSMSPDU(phone, msg);
-            }
-            case 1: {   //Text
-                return sendSMSText(phone, msg);
-            }
-        }
-        return false;
-    }
-
     static boolean isFirst = true;
     static boolean isThere = true;
 
     public void readSmsToIndex() {
         try {
-
             int index;
             while (true) {
                 index = FileHelper.readSmsIndex();
-                String sendCmd = "AT+CMGR=" + index + "\r";
-                outputStream.write(sendCmd.getBytes());
-                String result = readResponse();
-                String lines[] = result.trim().split("\n");
 
-                if (isThere == false) {     //if on the first check there are no sms, empty storage
-                    if (isFirst == true) {
-                        emptySMStorage();
-                        isFirst = false;
-                    }
-                }
-
-                try {
-                    if (lines.length < 4 && lines[2].equals("OK")) {    //Empty
-                        isThere = false;
-                        FileHelper.writeSmsIndex(0);
-                        break;
-                    }
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    isThere = false;
-                    FileHelper.writeSmsIndex(0);
-                    break;
-                }
-                if (result.contains("ERROR")) {
-                    isThere = false;
-                    FileHelper.writeSmsIndex(0);
-                    break;
-                }
-                Sms sms = extractSMSObject(index, result);
+                Sms sms = readSmsFromIndex(index);
                 if (sms == null) {
-                    isThere = false;
-                    FileHelper.writeSmsIndex(0);
                     break;
                 }
-                isThere = true;
-                isFirst = false;
-
                 //Display Notification
                 if (sms.getSenderPhone() == null || sms.getBody() == null) {
                     break;
                 }
                 System.out.println("Message Received \nFrom: " + sms.getSenderPhone() + "\nBody: " + sms.getBody());
-                //Insert into database
-                insertSmsToDB(sms);
 
-                //Delete SMS from memory
-                sendCmd("AT+CMGD=" + index + "\r");
-                System.out.println("Message Deleted");
-
-                index++;
-                FileHelper.writeSmsIndex(index);
+                insertIntoDB(sms, index);
 
                 Thread.sleep(2000);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private Sms readSmsFromIndex(int index) {
+        try {
+            String sendCmd = "AT+CMGR=" + index + "\r";
+            outputStream.write(sendCmd.getBytes());
+            String result = readResponse();
+            String lines[] = result.trim().split("\n");
+
+            if (isThere == false) {     //if on the first check there are no sms, empty storage
+                if (isFirst == true) {
+                    emptySMStorage();
+                    isFirst = false;
+                }
+            }
+
+            try {
+                if (lines.length < 4 && lines[2].equals("OK")) {    //Empty
+                    isThere = false;
+                    FileHelper.writeSmsIndex(0);
+                    return null;
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                isThere = false;
+                FileHelper.writeSmsIndex(0);
+                return null;
+            }
+            if (result.contains("ERROR")) {
+                isThere = false;
+                FileHelper.writeSmsIndex(0);
+                return null;
+            }
+            Sms sms = extractSMSObject(index, result);
+            if (sms == null) {
+                isThere = false;
+                FileHelper.writeSmsIndex(0);
+                return null;
+            }
+
+//            FileHelper.writeSmsIndex(index);
+//            deleteSms(index);
+//            deleteSms(index);
+//            FileHelper.writeSmsIndex(0);
+            sms.setTimeStamp(getCurrentTimeStamp());
+            if (sms.getBody().length() > 152) {
+                combineSMS(sms, index);
+            }
+            isThere = true;
+            isFirst = false;
+
+            return sms;
+        } catch (IOException ex) {
+            Logger.getLogger(SmsFuncAt.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(SmsFuncAt.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return null;
+    }
+
+    private Sms combineSMS(Sms sms, int prevIndex) throws Exception {
+        System.out.println("Combining SMS");
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(SmsFuncAt.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        int index = prevIndex + 1;
+
+        Sms nextSms = readSmsFromIndex(index);
+        if (nextSms == null) {
+            return sms;
+        }
+        nextSms.setTimeStamp(getCurrentTimeStamp());
+        if (sms.getSenderPhone().equals(nextSms.getSenderPhone())) {
+            String time = sms.getTimeStamp().split("\\s+")[1];
+            int hour = Integer.parseInt(time.split(":")[0]),
+                    min = Integer.parseInt(time.split(":")[1]);
+
+            String timeNew = nextSms.getTimeStamp().split("\\s+")[1];
+            int hourNew = Integer.parseInt(time.split(":")[0]),
+                    minNew = Integer.parseInt(time.split(":")[1]);
+            if (hour == hourNew && minNew <= min + 5) {
+                sms.setBody(sms.getBody().concat(nextSms.getBody()));
+            }
+        } else {
+            insertIntoDB(sms, prevIndex);
+            insertIntoDB(nextSms, index);
+        }
+
+        return sms;
     }
 
     private Sms extractSMSObject(int index, String result) {
@@ -280,24 +348,29 @@ public class SmsFuncAt {
     }
 
     private Sms extractSMSObjectPDU(int index, String result) {
-        System.out.println(result);
-        Sms sms = new Sms();
-        sms.setIndex(String.valueOf(index));
-        String arr[] = result.split("\n");
-        String details;
-        int pos = 0;
-        for (String st : arr) {
-            pos++;
-            if (st.contains("+CMGR:")) {
-                break;
+        Sms sms = null;
+        try {
+            System.out.println(result);
+            sms = new Sms();
+            sms.setIndex(String.valueOf(index));
+            String arr[] = result.split("\n");
+            String details;
+            int pos = 0;
+            for (String st : arr) {
+                pos++;
+                if (st.contains("+CMGR:")) {
+                    break;
+                }
             }
+            convertPDUtoText(arr[pos], sms);
+        } catch (Exception e) {
+            System.out.println(e);
         }
-        convertPDUtoText(arr[pos], sms);
         return sms;
     }
 
     public void convertPDUtoText(String resultMessage, Sms sms) {
-            try {
+        try {
             Pdu pdu = new PduParser().parsePdu(resultMessage);
             sms.setSenderPhone("+" + pdu.getAddress());
             sms.setBody(pdu.getDecodedText());
@@ -470,6 +543,13 @@ public class SmsFuncAt {
             }
         }
         return result;
+    }
+
+    public static String getCurrentTimeStamp() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        Date date = new Date();
+        return dateFormat.format(date);
     }
 
     public static void ctrlZ() {

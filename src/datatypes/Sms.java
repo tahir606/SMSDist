@@ -2,7 +2,7 @@ package datatypes;
 
 public class Sms {
 
-    private String index, senderPhone, timeStamp, body;
+    private String index, senderPhone, timeStamp, body;   
 
     public Sms() {
     }
